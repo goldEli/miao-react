@@ -1,3 +1,16 @@
+export function isEventName(name) {
+  const reg = /^on(\D[a-zA-Z]*)$/;
+
+  return reg.test(name);
+}
+
+export function getEventName(name) {
+  const reg = /^on(\D[a-zA-Z]*)$/;
+  const match = name.match(reg);
+
+  return match ? match[1].toLowerCase() : "";
+}
+
 export function isString(str) {
   return typeof str === "string";
 }
@@ -22,7 +35,7 @@ export function isClass(value: any): boolean {
 }
 
 export function isReactClassComponent(type: any) {
-  return type.prototype.isReactComponent
+  return type.prototype.isReactComponent;
 }
 
 export function isFunction(obj) {

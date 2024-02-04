@@ -1,6 +1,8 @@
 import {
+  getEventName,
   isArray,
   isEmpty,
+  isEventName,
   isFunction,
   isNumber,
   isReactClassComponent,
@@ -64,13 +66,40 @@ function patchComponent(element) {
 function patchHTMLElement(element) {
   const {
     type,
-    props: { children },
+    props: { children, ...attributes },
   } = element;
   const dom = document.createElement(type);
 
+  updateAttributes(dom, attributes);
   appendChildren(children, dom);
 
   return dom;
+}
+
+function updateAttributes(dom: HTMLDivElement, attributes) {
+  const { className, style, ...otherProps } = attributes ?? {};
+
+  if (className) {
+    dom.setAttribute("class", className);
+  }
+  if (style) {
+    for (let key in style) {
+      dom.style[key] = style[key];
+    }
+  }
+  for (let key in otherProps) {
+    if (isEventName(key)) {
+      const eventName = getEventName(key);
+      console.log("eventName", eventName);
+      dom.addEventListener(eventName, otherProps[key]);
+    } else {
+      setAttribute(dom, key, otherProps[key]);
+    }
+  }
+}
+
+function setAttribute(dom, key, value) {
+  dom.setAttribute(key, value);
 }
 
 function patchNumber(element) {
