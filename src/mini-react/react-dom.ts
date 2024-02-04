@@ -26,7 +26,7 @@ function renderDom(element) {
   }
   // element type string
   if (isString(element.type)) {
-    return patchElement(element);
+    return patchHTMLElement(element);
   }
   // element type function
   // element type class
@@ -61,7 +61,7 @@ function patchComponent(element) {
   return dom;
 }
 
-function patchElement(element) {
+function patchHTMLElement(element) {
   const {
     type,
     props: { children },
