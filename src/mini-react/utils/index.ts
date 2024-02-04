@@ -10,6 +10,9 @@ export function getEventName(name) {
 
   return match ? match[1].toLowerCase() : "";
 }
+export function isBoolean(bool) {
+  return typeof bool === "boolean";
+}
 
 export function isString(str) {
   return typeof str === "string";

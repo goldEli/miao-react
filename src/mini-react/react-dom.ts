@@ -1,46 +1,65 @@
+import { Fiber, createFiber } from "./fiber";
 import { updateAttributes } from "./updateAttributes";
 import {
-  getEventName,
   isArray,
+  isBoolean,
   isEmpty,
-  isEventName,
   isFunction,
   isNumber,
   isReactClassComponent,
   isString,
 } from "./utils";
 
-function renderDom(element) {
-  console.log("renderDom", element);
+function renderDom(element, fiber?: Fiber | null) {
+  // console.log("renderDom", element);
+  // const { element } = fiber;
   let dom: any = null;
   // not element
-  if (!element && element !== 0) return dom;
-  // string
-  if (isString(element)) {
-    return patchString(element);
+  if (!element && element !== 0) {
+    dom = null;
+  } else if (isBoolean(element)) {
+    dom = document.createDocumentFragment();
+  } else if (isString(element)) {
+    // string
+    dom = patchString(element);
+  } else if (isNumber(element)) {
+    // number
+    dom = patchNumber(element);
+  } else if (isString(element.type)) {
+    // element type string
+    dom = patchHTMLElement(element);
+  } else if (isFunction(element.type)) {
+    // element type function
+    // element type class
+    dom = patchComponent(element, fiber);
   }
-  // number
-  if (isNumber(element)) {
-    return patchNumber(element);
+
+  const { props } = element ?? {};
+  const { children } = props ?? {};
+  if (children) {
+    if (isArray(children)) {
+      let temp = fiber?.child;
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        const childDom = renderDom(child, temp);
+        temp = temp?.sibling;
+        if (!isEmpty(childDom)) {
+          dom.appendChild(childDom);
+        }
+      }
+    } else {
+      dom.appendChild(renderDom(children, fiber?.child));
+    }
   }
-  // array
-  if (isArray(element)) {
-    return patchArray(element);
-  }
-  // element type string
-  if (isString(element.type)) {
-    return patchHTMLElement(element);
-  }
-  // element type function
-  // element type class
-  if (isFunction(element.type)) {
-    return patchComponent(element);
+
+  if (fiber) {
+    fiber.stateNode = dom;
   }
 
   return dom;
 }
 
-function patchComponent(element) {
+function patchComponent(element, fiber) {
   const {
     type,
     props: { children },
@@ -55,11 +74,11 @@ function patchComponent(element) {
     ele = fn(props);
   }
 
-  const dom = renderDom(ele);
+  const dom = renderDom(ele, fiber);
 
-  if (children) {
-    appendChildren(children, dom);
-  }
+  // if (children) {
+  //   appendChildren(children, dom);
+  // }
 
   return dom;
 }
@@ -72,12 +91,10 @@ function patchHTMLElement(element) {
   const dom = document.createElement(type);
 
   updateAttributes(dom, attributes);
-  appendChildren(children, dom);
+  // appendChildren(children, dom);
 
   return dom;
 }
-
-
 
 function patchNumber(element) {
   const dom = document.createTextNode(String(element));
@@ -87,33 +104,41 @@ function patchString(element) {
   const dom = document.createTextNode(element);
   return dom;
 }
-function patchArray(element) {
+function patchArray(element, fiber) {
   // return element.map((el) => {
   //   return renderDom(el);
   // });
   const dom = document.createDocumentFragment();
-  appendChildren(element, dom);
+  // appendChildren(element, dom, fiber);
   return dom;
 }
-function appendChildren(children, parentDom) {
-  if (isArray(children)) {
-    children.forEach((el) => {
-      const dom = renderDom(el);
-      if (!isEmpty(dom)) {
-        parentDom.appendChild(dom);
-      }
-    });
-  } else {
-    const dom = renderDom(children);
-    if (!isEmpty(dom)) {
-      parentDom.appendChild(dom);
-    }
-  }
-}
+// function appendChildren(children, parentDom) {
+//   if (isArray(children)) {
+//     children.forEach((el) => {
+//       const dom = renderDom(el);
+//       if (!isEmpty(dom)) {
+//         parentDom.appendChild(dom);
+//       }
+//     });
+//   } else {
+//     const dom = renderDom(children);
+//     if (!isEmpty(dom)) {
+//       parentDom.appendChild(dom);
+//     }
+//   }
+// }
+
+let nextUnitOfWork: Fiber | null = null;
+
 function render(element: any, container: HTMLDivElement) {
-  const dom = renderDom(element);
+  const rootFiber = createFiber(element, null);
+  const dom = renderDom(element, rootFiber);
+  nextUnitOfWork = rootFiber;
+
   console.log("element", element);
   console.log("dom", dom);
+  console.log("rootFiber", rootFiber);
+  rootFiber.stateNode = dom;
   container.appendChild(dom);
 }
 const ReactDOM = {
