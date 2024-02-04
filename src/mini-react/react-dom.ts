@@ -1,83 +1,59 @@
-import { Fiber, createFiber } from "./fiber";
+import { Fiber, createRootFiber } from "./fiber";
 import { updateAttributes } from "./updateAttributes";
 import {
-  isArray,
   isBoolean,
-  isEmpty,
-  isFunction,
   isNumber,
-  isReactClassComponent,
   isString,
 } from "./utils";
 
-function renderDom(element, fiber?: Fiber | null) {
+export function renderDom(element, workInProgress) {
   // console.log("renderDom", element);
   // const { element } = fiber;
   let dom: any = null;
   // not element
   if (!element && element !== 0) {
     dom = null;
+    workInProgress.type = ''
   } else if (isBoolean(element)) {
     dom = document.createDocumentFragment();
+    workInProgress.type = 'boolean'
   } else if (isString(element)) {
     // string
     dom = patchString(element);
+    workInProgress.type = 'string'
   } else if (isNumber(element)) {
     // number
     dom = patchNumber(element);
+    workInProgress.type = 'number'
   } else if (isString(element.type)) {
     // element type string
     dom = patchHTMLElement(element);
-  } else if (isFunction(element.type)) {
-    // element type function
-    // element type class
-    dom = patchComponent(element, fiber);
+    workInProgress.type = 'element'
   }
-
-  const { props } = element ?? {};
-  const { children } = props ?? {};
-  if (children) {
-    if (isArray(children)) {
-      let temp = fiber?.child;
-      for (let i = 0; i < children.length; i++) {
-        const child = children[i];
-        const childDom = renderDom(child, temp);
-        temp = temp?.sibling;
-        if (!isEmpty(childDom)) {
-          dom.appendChild(childDom);
-        }
-      }
-    } else {
-      dom.appendChild(renderDom(children, fiber?.child));
-    }
-  }
-
-  if (fiber) {
-    fiber.stateNode = dom;
-  }
+ 
 
   return dom;
 }
 
-function patchComponent(element, fiber) {
-  const {
-    type,
-    props: { children },
-  } = element;
-  let ele;
-  if (isReactClassComponent(type)) {
-    const { props, type: Comp } = element;
-    const instance = new Comp(props);
-    ele = instance.render();
-  } else {
-    const { props, type: fn } = element;
-    ele = fn(props);
-  }
+// function patchComponent(element, fiber) {
+//   const {
+//     type,
+//     props: { children },
+//   } = element;
+//   let ele;
+//   if (isReactClassComponent(type)) {
+//     const { props, type: Comp } = element;
+//     const instance = new Comp(props);
+//     ele = instance.render();
+//   } else {
+//     const { props, type: fn } = element;
+//     ele = fn(props);
+//   }
 
-  const dom = renderDom(ele, fiber);
+//   const dom = renderDom(ele, fiber);
 
-  return dom;
-}
+//   return dom;
+// }
 
 function patchHTMLElement(element) {
   const {
@@ -100,18 +76,15 @@ function patchString(element) {
   return dom;
 }
 
-let nextUnitOfWork: Fiber | null = null;
-
 function render(element: any, container: HTMLDivElement) {
-  const rootFiber = createFiber(element, null);
-  const dom = renderDom(element, rootFiber);
-  nextUnitOfWork = rootFiber;
+  createRootFiber(element, container);
 
-  console.log("element", element);
-  console.log("dom", dom);
-  console.log("rootFiber", rootFiber);
-  rootFiber.stateNode = dom;
-  container.appendChild(dom);
+  // const dom = renderDom(element, rootFiber.child);
+
+  // console.log("element", element);
+  // console.log("rootFiber", rootFiber);
+  // console.log("dom", dom);
+  // container.appendChild(dom);
 }
 const ReactDOM = {
   render,

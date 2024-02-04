@@ -36,23 +36,50 @@ fiber 节点中有 sibling、return、child 三个属性，用来描述 dom 树�
 
 fiber 的节点解析先处理child，如果没有处理sibling，如果child和sibling都处理完了 return 回到上级继续处理
 
-## 创建 rootFiber
 
-当调用 ReactDOM.render 时，先创建 rootFiber
-
-rootFiber 作为整个应用的根节点，通过 rootFiber 开始 fiber 树的构建。
-
-属性包含 element 和 stateNode,
-
-element 表示当前节点的虚拟dom，stateNode 表示当前节点的真实dom。
-
-如果有儿子 创建 children
-
-如果有兄弟 创建 sibling
-
-return 执行父fiber
-
-## 创建 nextUnitOfWork
+##### 创建 nextUnitOfWork
 
 用于存储当前处理的的filer节点
 
+##### 创建 rootFiber
+
+当调用 ReactDOM.render 时，先创建 rootFiber
+
+```js
+const rootFiber = {
+    stateNode: container,
+    element: {props: [element]}
+    return: null,
+    child: null,
+    sibling: null
+} 
+```
+
+##### 创建 workInProgress
+
+```js
+// 执行当前工作单元并设置下一个要执行的工作单元
+function performUnitOfWork(workInProgress) {
+    // 如果没有stateNode 创建
+    // 如果有父亲和stateNode 挂载
+}
+
+performUnitOfWork(nextUnitOfWork)
+```
+
+##### 流程
+
+利用浏览器api  requestIdleCallbac
+
+当空闲时执行 performUnitOfWork, 执行完毕更新 nextUnitOfWork 用于下次执行
+
+workLoop -> performUnitOfWork(nextUnitOfWork)
+
+
+rootFiber 
+    - deep1-box
+        - classComponent
+            - class-component
+                - this is a class Component
+                - this value is: 
+                    - 66
