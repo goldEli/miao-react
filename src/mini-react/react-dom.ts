@@ -1,60 +1,107 @@
-import { isArray, isFunction, isReactClassComponent, isString } from "./utils";
+import {
+  isArray,
+  isEmpty,
+  isFunction,
+  isNumber,
+  isReactClassComponent,
+  isString,
+} from "./utils";
 
 function renderDom(element) {
   console.log("renderDom", element);
   let dom: any = null;
   // not element
-  if (!element) return dom;
+  if (!element && element !== 0) return dom;
   // string
   if (isString(element)) {
-    dom = document.createTextNode(element);
-    return dom;
+    return patchString(element);
   }
   // number
+  if (isNumber(element)) {
+    return patchNumber(element);
+  }
   // array
   if (isArray(element)) {
-    return element.map((el) => {
-      return renderDom(el);
-    });
+    return patchArray(element);
   }
   // element type string
   if (isString(element.type)) {
-    dom = document.createElement(element.type);
-
-    patchChildren(element?.props?.children, dom);
-
-    return dom;
+    return patchElement(element);
   }
   // element type function
   // element type class
   if (isFunction(element.type)) {
-    let ele;
-    if (isReactClassComponent(element.type)) {
-      const instance = new element.type(element.props);
-      ele = instance.render();
-    } else {
-      ele = element.type(element.props);
-    }
-    const dom = renderDom(ele);
-
-    return dom;
+    return patchComponent(element);
   }
 
   return dom;
 }
-function patchChildren(children, dom) {
-  const childrenDom = renderDom(children);
 
-  if (childrenDom === null) return;
+function patchComponent(element) {
+  const {
+    type,
+    props: { children },
+  } = element;
+  let ele;
+  if (isReactClassComponent(type)) {
+    const { props, type: Comp } = element;
+    const instance = new Comp(props);
+    ele = instance.render();
+  } else {
+    const { props, type: fn } = element;
+    ele = fn(props);
+  }
 
-  if (isArray(childrenDom)) {
-    childrenDom.forEach((el) => {
-      if (el !== null) {
-        dom.appendChild(el);
+  const dom = renderDom(ele);
+
+  if (children) {
+    appendChildren(children, dom);
+  }
+
+  return dom;
+}
+
+function patchElement(element) {
+  const {
+    type,
+    props: { children },
+  } = element;
+  const dom = document.createElement(type);
+
+  appendChildren(children, dom);
+
+  return dom;
+}
+
+function patchNumber(element) {
+  const dom = document.createTextNode(String(element));
+  return dom;
+}
+function patchString(element) {
+  const dom = document.createTextNode(element);
+  return dom;
+}
+function patchArray(element) {
+  // return element.map((el) => {
+  //   return renderDom(el);
+  // });
+  const dom = document.createDocumentFragment();
+  appendChildren(element, dom);
+  return dom;
+}
+function appendChildren(children, parentDom) {
+  if (isArray(children)) {
+    children.forEach((el) => {
+      const dom = renderDom(el);
+      if (!isEmpty(dom)) {
+        parentDom.appendChild(dom);
       }
     });
   } else {
-    dom.appendChild(childrenDom);
+    const dom = renderDom(children);
+    if (!isEmpty(dom)) {
+      parentDom.appendChild(dom);
+    }
   }
 }
 function render(element: any, container: HTMLDivElement) {

@@ -2,8 +2,16 @@
 
 ## ReactDom
 
-### 如何判断是类组件还是函数组件
+* patch string
+* patch number
+* patch Array
+* patch Component
+
+### 判断是类组件还是函数组件
 
 type.prototype.isReactComponent
 
-### 如何解决children挂载
+### children挂载
+
+* 利用 createDocumentFragment 挂载并返回
+* 虚拟节点，减少对真实dom的修改

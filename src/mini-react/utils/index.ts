@@ -1,6 +1,13 @@
 export function isString(str) {
   return typeof str === "string";
 }
+export function isNumber(str) {
+  return typeof str === "number";
+}
+
+export function isEmpty(value) {
+  return value === "" || value === null || value === undefined;
+}
 
 export function isArray(arr) {
   return Array.isArray(arr);
