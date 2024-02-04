@@ -76,10 +76,6 @@ function patchComponent(element, fiber) {
 
   const dom = renderDom(ele, fiber);
 
-  // if (children) {
-  //   appendChildren(children, dom);
-  // }
-
   return dom;
 }
 
@@ -91,7 +87,6 @@ function patchHTMLElement(element) {
   const dom = document.createElement(type);
 
   updateAttributes(dom, attributes);
-  // appendChildren(children, dom);
 
   return dom;
 }
@@ -104,29 +99,6 @@ function patchString(element) {
   const dom = document.createTextNode(element);
   return dom;
 }
-function patchArray(element, fiber) {
-  // return element.map((el) => {
-  //   return renderDom(el);
-  // });
-  const dom = document.createDocumentFragment();
-  // appendChildren(element, dom, fiber);
-  return dom;
-}
-// function appendChildren(children, parentDom) {
-//   if (isArray(children)) {
-//     children.forEach((el) => {
-//       const dom = renderDom(el);
-//       if (!isEmpty(dom)) {
-//         parentDom.appendChild(dom);
-//       }
-//     });
-//   } else {
-//     const dom = renderDom(children);
-//     if (!isEmpty(dom)) {
-//       parentDom.appendChild(dom);
-//     }
-//   }
-// }
 
 let nextUnitOfWork: Fiber | null = null;
 
