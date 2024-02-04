@@ -21,3 +21,5 @@ type.prototype.isReactComponent
 ## 更新 dom 属性
 
 处理 props 中的 href style className 等
+
+需要特殊处理 style className 事件
