@@ -128,5 +128,36 @@ currentRoot 表示当前的 fiber 树，workInProgressRoot 表示正在构建的
 
 ## React.component
 
+* Component 有个属性用于区分类组件和函数组件
+* Component 原型上挂载一个updateProps 方法用于更新 props
+* this.setState 挂载到原型上，用于更新 state， 触发setState 执行 commitRender
+
+updateClassComponent
+
+* 第一次执行 将 Component 存到 fiber中
+
+* 第二次执行 直接在 oldFiber 中拿到 Component 执行 updateProps 更新 props
+* 执行 render
+
+## Function Component
+
+updateFunctionComponent
+
+* fiber 存到全局 currentFiber
+* 重置 全局 hookIndex = 0
+* 清空 currentFiber.hooks = []
+* 执行 render
+
+setState
+
+* 从 oldFiber 中拿到 oldHooks
+* 基于 hookIndex 在 oldHooks 取到道歉的 oldHook
+* 初始化 hook
+    * state 如果oldHook存在，则取到 oldHook.state,反之取用户初始值
+    * queue = []
+* 循环执行hook.queue数组 为 state 赋值
+* setState 方法 触发 push 到queue 中，因为可以能会执行多次，执行commitRender
+
+
 
 
