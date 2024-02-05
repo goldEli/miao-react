@@ -1,5 +1,71 @@
 # miao-vue
 
+## 总结
+
+##### 初始化
+
+* 基于 jsx 返回的 React.element 创建 rootFiber, 并赋值为全局的 currentFiberRoot
+* rootFiber 存入 unitOfWork
+* loopWork 利用浏览器空闲 循环执行 performUnitOfWork
+* performUnitOfWork 处理 unitOfWork
+    * 处理 children 
+        * 第一个儿子 childFiber
+        * 下一个兄弟 siblingFiber 并存入上一个兄弟
+    * 更新下一个 unitOfWork
+        * 先找儿子
+        * 没有儿子找兄弟
+        * 没有兄弟找父 返回上级，直到顶层 unitOfWork 为 null
+* 当 unitOfWork 为 null 说明所有子节点已经处理完毕，可以更新 dom 了，进入 commit 阶段
+
+##### commit 阶段
+
+* 递归处理 currentFiberRoot, 深度优先，从下到上appendChild, 避免多次挂载导致的重绘和回流
+
+##### update 阶段
+
+* commitRender 生成新的 fiber 树
+* 对比新旧fiber树，基于增删查改为fiber打tag
+* 在 commit 阶段基于tag 处理 增删查改
+
+##### Component 组件
+
+* Component 
+    * 原型上挂载一个属性 区分是类组件还是函数组件
+    * 原型上挂载一个setState 方法修改 this.state
+    * 原型上挂载 updateProps 方法 更新 props
+* updateComponent
+    * 第一次 
+        * 将instance 存入到 fiber 中
+        * render
+    * 第二次 (执行 this.setState 触发 commitRender)
+        * 直接从 oldFiber 拿到 instance
+        * updateProps
+        * render
+
+##### Function 组件
+
+* 全局 currentFunctionFiber 存入当前 fiber
+* 重置 currentFunctionFiber.hooks = [] 
+* 重置 hooksIndex = 0
+* 执行 函数组件 方法
+
+useState
+
+* currentFunctionFiber.alternate.hooks 拿到 oldHooks
+* hooksIndex 拿到当前的 oldHook
+* 初始化 hook
+    * state: oldHook.state || initialState
+    * queue: [] 因为可能会执行多次 将每次执行存到队列中
+* oldHook 中拿到 queue, 循环执行修改 state
+* 创建 setState 方法
+    * 将新值 push 到 queue 中， 并触发 commitRender
+* 将 hook 存入currentFunctionFiber.hooks
+* 返回 hook.state 和 setState
+
+
+
+
+
 ## ReactDom
 
 jsx => React.element => real dom
