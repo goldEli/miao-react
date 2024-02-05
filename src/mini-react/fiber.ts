@@ -38,15 +38,6 @@ function performUnitOfWork(workInProgress) {
     // 若当前 fiber 没有 stateNode，则根据 fiber 挂载的 element 的属性创建
     workInProgress.stateNode = renderDom(workInProgress.element);
   }
-  // if (workInProgress.return && workInProgress.stateNode) {
-  //     // 如果 fiber 有父 fiber且有 dom
-  //     // 向上寻找能挂载 dom 的节点进行 dom 挂载
-  //     let parentFiber = workInProgress.return;
-  //     while (!parentFiber.stateNode) {
-  //         parentFiber = parentFiber.return;
-  //     }
-  //     parentFiber.stateNode.appendChild(workInProgress.stateNode);
-  // }
 
   let children = workInProgress.element?.props?.children;
 
@@ -55,10 +46,7 @@ function performUnitOfWork(workInProgress) {
     // 当前 fiber 对应 React 组件时，对其 return 迭代
     if (type.prototype.isReactComponent) {
       // 类组件
-      const { props, type: Comp } = workInProgress.element;
-      const component = new Comp(props);
-      const jsx = component.render();
-      children = [jsx];
+      updateClassComponent(workInProgress);
     } else {
       // 函数组件
       const { props, type: Fn } = workInProgress.element;
@@ -97,6 +85,32 @@ function performUnitOfWork(workInProgress) {
       nextUnitOfWork = null;
     }
   }
+}
+export const commitRender = () => {
+  workInProgressRoot = {
+    stateNode: currentRoot.stateNode, // 记录对应的真实 dom 节点
+    element: currentRoot.element,
+    alternate: currentRoot,
+  };
+  nextUnitOfWork = workInProgressRoot;
+};
+
+function updateClassComponent(fiber) {
+  let jsx;
+  if (fiber.alternate) {
+    // 复用
+    const component = fiber.alternate.component;
+    fiber.component = component;
+    component._UpdateProps(fiber.element.props);
+    jsx = component.render();
+  } else {
+    const { props, type: Comp } = fiber.element;
+    const component = new Comp(props);
+    fiber.component = component;
+    jsx = component.render();
+  }
+
+  reconcileChildren(fiber, [jsx]);
 }
 
 // 处理循环和中断逻辑

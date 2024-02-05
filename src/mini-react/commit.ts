@@ -31,7 +31,6 @@ function commitWork(fiber) {
     // 添加 dom
     const targetPositionDom = parentDom.childNodes[fiber.index]; // 要插入到那个 dom 之前
     if (targetPositionDom) {
-        debugger
       // targetPositionDom 存在，则插入
       parentDom.insertBefore(fiber.stateNode, targetPositionDom);
 

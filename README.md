@@ -126,6 +126,7 @@ currentRoot 表示当前的 fiber 树，workInProgressRoot 表示正在构建的
 这个过程为fiber 打上 tag，收集需要删除的节点（deletions）
 
 
+## React.component
 
 
 
