@@ -71,9 +71,20 @@ performUnitOfWork(nextUnitOfWork)
 
 利用浏览器api  requestIdleCallbac
 
-当空闲时执行 performUnitOfWork, 执行完毕更新 nextUnitOfWork 用于下次执行
+当空闲时执行 performUnitOfWork, 执行完更新 nextUnitOfWork 用于下次执行
 
 workLoop -> performUnitOfWork(nextUnitOfWork)
+
+**performUnitOfWork**
+
+* 创建 dom，如果有父亲则 append
+* 创建fiber树，如果有儿子 处理 child 和 sibling
+* 设置下一个执行单元
+    * 找儿子
+    * 没有儿子兄弟
+    * 没有兄弟返回父亲，父亲没有兄弟返回父亲，直到根节点
+
+
 
 
 rootFiber 

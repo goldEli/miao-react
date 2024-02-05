@@ -73,19 +73,27 @@ function performUnitOfWork(workInProgress: Fiber) {
   if (children) {
     children = isArray(children) ? children : [children];
 
-    const childFiber: Fiber = {
-      element: children[0],
-      return: workInProgress,
-    };
-    workInProgress.child = childFiber;
-    let temp = childFiber;
-    for (let i = 1; i < children.length; ++i) {
-      const siblingFiber: Fiber = {
-        element: children[i],
+    let index = 0;
+    let prevSibling: Fiber | null = null;
+
+    while (index < children.length) {
+      const newFiber: Fiber = {
+        element: children[index],
         return: workInProgress,
+        stateNode: null,
       };
-      temp.sibling = siblingFiber;
-      temp = siblingFiber;
+
+      if (index === 0) {
+        workInProgress.child = newFiber;
+      } else {
+        if (prevSibling) {
+          prevSibling.sibling = newFiber;
+        }
+      }
+
+      prevSibling = newFiber;
+
+      ++index;
     }
   }
 
