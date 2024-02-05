@@ -1,77 +1,102 @@
-import { Fiber, createRootFiber } from "./fiber";
-import { updateAttributes } from "./updateAttributes";
-import {
-  isBoolean,
-  isFunction,
-  isNumber,
-  isString,
-} from "./utils";
+import { createRoot } from "./fiber";
 
-export function renderDom(element, workInProgress) {
-  // console.log("renderDom", element);
-  // const { element } = fiber;
-  let dom: any = null;
-  // not element
-  if (!element && element !== 0) {
-    dom = null;
-    workInProgress.type = ''
-  } else if (isBoolean(element)) {
-    dom = document.createDocumentFragment();
-    workInProgress.type = 'boolean'
-  } else if (isFunction(element.type)) {
-    dom = document.createDocumentFragment();
-    workInProgress.type = 'function'
-  } else if (isString(element)) {
-    // string
-    dom = patchString(element);
-    workInProgress.type = 'string'
-  } else if (isNumber(element)) {
-    // number
-    dom = patchNumber(element);
-    workInProgress.type = 'number'
-  } else if (isString(element.type)) {
-    // element type string
-    dom = patchHTMLElement(element);
-    workInProgress.type = 'element'
-  }
- 
-
-  return dom;
+function render(element, container) {
+  createRoot(element, container);
 }
 
-function patchHTMLElement(element) {
+// 将 React.Element 渲染为真实 dom
+export function renderDom(element) {
+  let dom: any = null; // 要返回的 dom
+
+  if (!element && element !== 0) {
+    // 条件渲染为假，返回 null
+    return null;
+  }
+
+  if (typeof element === "string") {
+    // 如果 element 本身为 string，返回文本节点
+    dom = document.createTextNode(element);
+    return dom;
+  }
+
+  if (typeof element === "number") {
+    // 如果 element 本身为 number，将其转为 string 后返回文本节点
+    dom = document.createTextNode(String(element));
+    return dom;
+  }
+
   const {
     type,
     props: { children, ...attributes },
   } = element;
-  const dom = document.createElement(type);
+
+  if (typeof type === "string") {
+    // 常规 dom 节点的渲染
+    dom = document.createElement(type);
+  } else if (typeof type === "function") {
+    dom = document.createDocumentFragment();
+  } else {
+    // 其他情况暂不考虑
+    return null;
+  }
 
   updateAttributes(dom, attributes);
 
   return dom;
 }
 
-function patchNumber(element) {
-  const dom = document.createTextNode(String(element));
-  return dom;
-}
-function patchString(element) {
-  const dom = document.createTextNode(element);
-  return dom;
+// 更新 dom 属性
+export function updateAttributes(dom, attributes, oldAttributes?) {
+  if (oldAttributes) {
+    // 有旧属性，移除旧属性
+    Object.keys(oldAttributes).forEach((key) => {
+      if (key.startsWith("on")) {
+        // 移除旧事件
+        const eventName = key.slice(2).toLowerCase();
+        dom.removeEventListener(eventName, oldAttributes[key]);
+      } else if (key === "className") {
+        // className 的处理
+        const classes = oldAttributes[key].split(" ");
+        classes.forEach((classKey) => {
+          dom.classList.remove(classKey);
+        });
+      } else if (key === "style") {
+        // style处理
+        const style = oldAttributes[key];
+        Object.keys(style).forEach((styleName) => {
+          dom.style[styleName] = "initial";
+        });
+      } else {
+        // 其他属性的处理
+        dom[key] = "";
+      }
+    });
+  }
+  Object.keys(attributes).forEach((key) => {
+    if (key.startsWith("on")) {
+      // 事件的处理
+      const eventName = key.slice(2).toLowerCase();
+      dom.addEventListener(eventName, attributes[key]);
+    } else if (key === "className") {
+      // className 的处理
+      const classes = attributes[key].split(" ");
+      classes.forEach((classKey) => {
+        dom.classList.add(classKey);
+      });
+    } else if (key === "style") {
+      // style处理
+      const style = attributes[key];
+      Object.keys(style).forEach((styleName) => {
+        dom.style[styleName] = style[styleName];
+      });
+    } else {
+      // 其他属性的处理
+      dom[key] = attributes[key];
+    }
+  });
 }
 
-function render(element: any, container: HTMLDivElement) {
-  createRootFiber(element, container);
-
-  // const dom = renderDom(element, rootFiber.child);
-
-  // console.log("element", element);
-  // console.log("rootFiber", rootFiber);
-  // console.log("dom", dom);
-  // container.appendChild(dom);
-}
 const ReactDOM = {
   render,
 };
-
 export default ReactDOM;

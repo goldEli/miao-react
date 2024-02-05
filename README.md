@@ -113,6 +113,18 @@ currentRoot 表示当前的 fiber 树，workInProgressRoot 表示正在构建的
 
 对比这两个树的差异，更新 dom
 
+##### 为 fiber 打 tag
+
+* Placement 添加
+    * 如果需要添加的位置，原来的节点存在 则加到该节点前面
+    * 不存在直接加到最后
+* Update 更新属性
+* Deletion 删除
+
+数据改变，jsx 改变，触发render函数生成新的 workInProgressRoot
+
+这个过程为fiber 打上 tag，收集需要删除的节点（deletions）
+
 
 
 

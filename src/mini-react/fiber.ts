@@ -1,157 +1,105 @@
 import { renderDom } from "./react-dom";
-import { isArray, isFunction, isReactClassComponent } from "./utils";
+import { commitRoot } from "./commit";
+import { reconcileChildren } from "./reconciler";
 
-export type Fiber = {
-  stateNode?: null | HTMLElement; // 对应真实DOM节点
-  element: null | any; // 对应React element 虚拟节点
-  return?: null | Fiber; // 指向父级
-  child?: null | Fiber; // 指向子级
-  sibling?: null | Fiber; // 指向右边第一个兄弟
-  type?: any;
-};
+let nextUnitOfWork: any = null;
+let workInProgressRoot: any = null; // 当前工作的 fiber 树
+let currentRoot: any = null; // 上一次渲染的 fiber 树
 
-let nextUnitOfWork: Fiber | null | undefined = null;
-// 当前的fiber树
-let currentRoot: Fiber | null | undefined = null;
-// 正在构建的fiber树
-let workInProgressRoot: Fiber | null | undefined = null;
-export const createRootFiber = (element, container) => {
+let deletions: any[] = []; // 要执行删除 dom 的 fiber
+
+// 将某个 fiber 加入 deletions 数组
+export function deleteFiber(fiber) {
+  deletions.push(fiber);
+}
+
+// 获取 deletions 数组
+export function getDeletions() {
+  return deletions;
+}
+
+// 创建 rootFiber 作为首个 nextUnitOfWork
+export function createRoot(element, container) {
   workInProgressRoot = {
-    element: { props: { children: [element] } },
-    stateNode: container,
-    return: null,
-    sibling: null,
+    stateNode: container, // 记录对应的真实 dom 节点
+    element: {
+      // 挂载 element
+      props: { children: [element] },
+    },
+    alternate: currentRoot,
   };
-
+  console.log({ workInProgressRoot, element });
   nextUnitOfWork = workInProgressRoot;
-
-  requestIdleCallback(workLoop);
-
-  console.log("currentRoot", workInProgressRoot);
-
-  return workInProgressRoot;
-};
-
-function commitRoot() {
-  if (
-    workInProgressRoot &&
-    workInProgressRoot.child &&
-    workInProgressRoot.child
-  ) {
-    commitWork(workInProgressRoot.child);
-  }
 }
 
-function commitWork(fiber: Fiber) {
-  if (fiber.child) {
-    commitWork(fiber.child);
-  }
-
-  console.log("fiber", fiber);
-
-  if (fiber?.stateNode) {
-    fiber.return?.stateNode?.appendChild(fiber?.stateNode);
-  }
-
-  if (fiber.sibling) {
-    commitWork(fiber.sibling);
-  }
-}
-
-function performUnitOfWork(workInProgress: Fiber) {
-  /**
-   * 构建fiber 创建 dom
-   * */
-  // 如果没有 stateNode 创建
+// 执行当前工作单元并设置下一个要执行的工作单元
+function performUnitOfWork(workInProgress) {
   if (!workInProgress.stateNode) {
-    workInProgress.stateNode = renderDom(
-      workInProgress.element,
-      workInProgress
-    );
-
-    // 如果有stateNode 找到父亲 append
-    // if (workInProgress.stateNode) {
-    //   let parentFiber = workInProgress.return;
-    //   while (!!parentFiber && !parentFiber?.stateNode) {
-    //     parentFiber = parentFiber?.return;
-    //   }
-    //   if (parentFiber?.stateNode) {
-    //     parentFiber.stateNode.appendChild(workInProgress.stateNode);
-    //   }
-    // }
+    // 若当前 fiber 没有 stateNode，则根据 fiber 挂载的 element 的属性创建
+    workInProgress.stateNode = renderDom(workInProgress.element);
   }
+  // if (workInProgress.return && workInProgress.stateNode) {
+  //     // 如果 fiber 有父 fiber且有 dom
+  //     // 向上寻找能挂载 dom 的节点进行 dom 挂载
+  //     let parentFiber = workInProgress.return;
+  //     while (!parentFiber.stateNode) {
+  //         parentFiber = parentFiber.return;
+  //     }
+  //     parentFiber.stateNode.appendChild(workInProgress.stateNode);
+  // }
 
-  /**
-   * 构建 fiber 树
-   * */
-  const { element } = workInProgress;
-  const { props, type } = element ?? {};
-  let { children } = props ?? {};
+  let children = workInProgress.element?.props?.children;
 
-  if (isFunction(type)) {
-    let jsx;
-    if (isReactClassComponent(type)) {
-      const component = new type(props);
-      jsx = component.render();
+  let type = workInProgress.element?.type;
+  if (typeof type === "function") {
+    // 当前 fiber 对应 React 组件时，对其 return 迭代
+    if (type.prototype.isReactComponent) {
+      // 类组件
+      const { props, type: Comp } = workInProgress.element;
+      const component = new Comp(props);
+      const jsx = component.render();
+      children = [jsx];
     } else {
-      jsx = type(props);
-    }
-    children = [jsx];
-  }
-
-  if (children) {
-    children = isArray(children) ? children : [children];
-
-    let index = 0;
-    let prevSibling: Fiber | null = null;
-
-    while (index < children.length) {
-      const newFiber: Fiber = {
-        element: children[index],
-        return: workInProgress,
-        stateNode: null,
-      };
-
-      if (index === 0) {
-        workInProgress.child = newFiber;
-      } else {
-        if (prevSibling) {
-          prevSibling.sibling = newFiber;
-        }
-      }
-
-      prevSibling = newFiber;
-
-      ++index;
+      // 函数组件
+      const { props, type: Fn } = workInProgress.element;
+      const jsx = Fn(props);
+      children = [jsx];
     }
   }
 
-  /**
-   * 设置下一个工作单元
-   * */
-  // 儿子
+  if (children || children === 0) {
+    // children 存在时，对 children 迭代
+    let elements = Array.isArray(children) ? children : [children];
+    // 打平列表渲染时二维数组的情况（暂不考虑三维及以上数组的情形）
+    elements = elements.flat();
+
+    reconcileChildren(workInProgress, elements);
+  }
+
+  // 设置下一个工作单元
   if (workInProgress.child) {
+    // 如果有子 fiber，则下一个工作单元是子 fiber
     nextUnitOfWork = workInProgress.child;
   } else {
-    let nextFiber: Fiber | null | undefined = workInProgress;
+    let nextFiber = workInProgress;
     while (nextFiber) {
-      // 如果有兄弟
       if (nextFiber.sibling) {
+        // 没有子 fiber 有兄弟 fiber，则下一个工作单元是兄弟 fiber
         nextUnitOfWork = nextFiber.sibling;
         return;
       } else {
-        // 返回上一级
+        // 子 fiber 和兄弟 fiber 都没有，深度优先遍历返回上一层
         nextFiber = nextFiber.return;
       }
     }
-
-    // 返回到顶层
     if (!nextFiber) {
+      // 若返回最顶层，表示迭代结束，将 nextUnitOfWork 置空
       nextUnitOfWork = null;
     }
   }
 }
 
+// 处理循环和中断逻辑
 function workLoop(deadline) {
   let shouldYield = false;
   while (nextUnitOfWork && !shouldYield) {
@@ -159,13 +107,14 @@ function workLoop(deadline) {
     performUnitOfWork(nextUnitOfWork);
     shouldYield = deadline.timeRemaining() < 1;
   }
-
   if (!nextUnitOfWork && workInProgressRoot) {
-    commitRoot();
-
+    // 表示进入 commit 阶段
+    commitRoot(workInProgressRoot);
     currentRoot = workInProgressRoot;
     workInProgressRoot = null;
+    deletions = [];
   }
-
   requestIdleCallback(workLoop);
 }
+
+requestIdleCallback(workLoop);
