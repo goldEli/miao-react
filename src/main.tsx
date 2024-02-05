@@ -1,19 +1,17 @@
 //  @ts-nocheck
 // import { Component } from "react";
-import { Component } from './mini-react/react';
+import { Component, useState } from "./mini-react/react";
 // import ReactDOM from 'react-dom';
 import ReactDOM from "./mini-react/react-dom";
 import "./index.css";
 
 class ClassComponent extends Component {
-
   constructor(props) {
     super(props);
     this.state = { count: 0 };
   }
 
   addCount = () => {
-    debugger
     this.setState({ count: this.state.count + 1 });
   };
 
@@ -27,14 +25,25 @@ class ClassComponent extends Component {
       </div>
     );
   }
-
 }
 
 function FunctionComponent(props) {
+  const [count, setCount] = useState(0);
+  const [count1, setCount1] = useState(1);
+  const addCount = () => {
+    setCount(count + 1);
+  };
+  const addCount1 = () => {
+    setCount1(count1 + 1);
+  };
   return (
     <div className="function-component">
       <div>this is a function Component</div>
       <div>prop value is: {props.value}</div>
+      <div>count is: {count}</div>
+      <input type="button" value="add count" onClick={addCount} />
+      <div>count1 is: {count1}</div>
+      <input type="button" value="add count1" onClick={addCount1} />
     </div>
   );
 }
