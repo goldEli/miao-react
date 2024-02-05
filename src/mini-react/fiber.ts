@@ -1,31 +1,58 @@
 import { renderDom } from "./react-dom";
 import { isArray, isFunction, isReactClassComponent } from "./utils";
 
-export interface Fiber {
+export type Fiber = {
   stateNode?: null | HTMLElement; // 对应真实DOM节点
   element: null | any; // 对应React element 虚拟节点
   return?: null | Fiber; // 指向父级
   child?: null | Fiber; // 指向子级
   sibling?: null | Fiber; // 指向右边第一个兄弟
   type?: any;
-}
+};
 
 let nextUnitOfWork: Fiber | null | undefined = null;
+let rootFiber: Fiber | null | undefined = null;
 export const createRootFiber = (element, container) => {
-  const rootFiber: Fiber = {
+  rootFiber = {
     element: { props: { children: [element] } },
     stateNode: container,
     return: null,
     sibling: null,
   };
+
   //   const child = createFiber(element, rootFiber);
   //   rootFiber.child = child;
 
   nextUnitOfWork = rootFiber;
+
   requestIdleCallback(workLoop);
+
+  console.log("rootFiber", rootFiber);
 
   return rootFiber;
 };
+
+function commitRoot() {
+  if (rootFiber && rootFiber.child && rootFiber.child) {
+    commitWork(rootFiber.child);
+  }
+}
+
+function commitWork(fiber: Fiber) {
+  if (fiber.child) {
+    commitWork(fiber.child);
+  }
+
+  console.log("fiber", fiber);
+
+  if (fiber?.stateNode) {
+    fiber.return?.stateNode?.appendChild(fiber?.stateNode);
+  }
+
+  if (fiber.sibling) {
+    commitWork(fiber.sibling);
+  }
+}
 
 function performUnitOfWork(workInProgress: Fiber) {
   /**
@@ -39,15 +66,15 @@ function performUnitOfWork(workInProgress: Fiber) {
     );
 
     // 如果有stateNode 找到父亲 append
-    if (workInProgress.stateNode) {
-      let parentFiber = workInProgress.return;
-      while (!!parentFiber && !parentFiber?.stateNode) {
-        parentFiber = parentFiber?.return;
-      }
-      if (parentFiber?.stateNode) {
-        parentFiber.stateNode.appendChild(workInProgress.stateNode);
-      }
-    }
+    // if (workInProgress.stateNode) {
+    //   let parentFiber = workInProgress.return;
+    //   while (!!parentFiber && !parentFiber?.stateNode) {
+    //     parentFiber = parentFiber?.return;
+    //   }
+    //   if (parentFiber?.stateNode) {
+    //     parentFiber.stateNode.appendChild(workInProgress.stateNode);
+    //   }
+    // }
   }
 
   /**
@@ -66,8 +93,6 @@ function performUnitOfWork(workInProgress: Fiber) {
       jsx = type(props);
     }
     children = [jsx];
-    // @ts-check
-    workInProgress.type = "function";
   }
 
   if (children) {
@@ -130,5 +155,11 @@ function workLoop(deadline) {
     performUnitOfWork(nextUnitOfWork);
     shouldYield = deadline.timeRemaining() < 1;
   }
+
+  if (!nextUnitOfWork && rootFiber) {
+    commitRoot();
+    rootFiber = null;
+  }
+
   requestIdleCallback(workLoop);
 }

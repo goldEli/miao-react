@@ -84,9 +84,6 @@ workLoop -> performUnitOfWork(nextUnitOfWork)
     * 没有儿子兄弟
     * 没有兄弟返回父亲，父亲没有兄弟返回父亲，直到根节点
 
-
-
-
 rootFiber 
     - deep1-box
         - classComponent
@@ -94,3 +91,20 @@ rootFiber
                 - this is a class Component
                 - this value is: 
                     - 66
+
+## render 和  commit 分离
+
+performUnitOfWork 执行，会因为浏览器高优先级任务而暂停，导致页面渲染展示不完全，所以需要将 render 和 commit 分离
+
+render 阶段负责创建 fiber 树，commit 阶段负责渲染 fiber 树
+
+nextUnitOfWork 为 null 时，表示 fiber 树创建完毕，可以进行 commit 阶段
+
+- commit
+    - commit root
+    - commit work
+        - 深度优先，从叶子节点开始挂载，最后统一挂载到根节点，避免重绘的回流
+
+
+
+

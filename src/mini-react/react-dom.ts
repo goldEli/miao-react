@@ -2,6 +2,7 @@ import { Fiber, createRootFiber } from "./fiber";
 import { updateAttributes } from "./updateAttributes";
 import {
   isBoolean,
+  isFunction,
   isNumber,
   isString,
 } from "./utils";
@@ -17,6 +18,9 @@ export function renderDom(element, workInProgress) {
   } else if (isBoolean(element)) {
     dom = document.createDocumentFragment();
     workInProgress.type = 'boolean'
+  } else if (isFunction(element.type)) {
+    dom = document.createDocumentFragment();
+    workInProgress.type = 'function'
   } else if (isString(element)) {
     // string
     dom = patchString(element);
