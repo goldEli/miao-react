@@ -11,30 +11,34 @@ export type Fiber = {
 };
 
 let nextUnitOfWork: Fiber | null | undefined = null;
-let rootFiber: Fiber | null | undefined = null;
+// 当前的fiber树
+let currentRoot: Fiber | null | undefined = null;
+// 正在构建的fiber树
+let workInProgressRoot: Fiber | null | undefined = null;
 export const createRootFiber = (element, container) => {
-  rootFiber = {
+  workInProgressRoot = {
     element: { props: { children: [element] } },
     stateNode: container,
     return: null,
     sibling: null,
   };
 
-  //   const child = createFiber(element, rootFiber);
-  //   rootFiber.child = child;
-
-  nextUnitOfWork = rootFiber;
+  nextUnitOfWork = workInProgressRoot;
 
   requestIdleCallback(workLoop);
 
-  console.log("rootFiber", rootFiber);
+  console.log("currentRoot", workInProgressRoot);
 
-  return rootFiber;
+  return workInProgressRoot;
 };
 
 function commitRoot() {
-  if (rootFiber && rootFiber.child && rootFiber.child) {
-    commitWork(rootFiber.child);
+  if (
+    workInProgressRoot &&
+    workInProgressRoot.child &&
+    workInProgressRoot.child
+  ) {
+    commitWork(workInProgressRoot.child);
   }
 }
 
@@ -156,9 +160,11 @@ function workLoop(deadline) {
     shouldYield = deadline.timeRemaining() < 1;
   }
 
-  if (!nextUnitOfWork && rootFiber) {
+  if (!nextUnitOfWork && workInProgressRoot) {
     commitRoot();
-    rootFiber = null;
+
+    currentRoot = workInProgressRoot;
+    workInProgressRoot = null;
   }
 
   requestIdleCallback(workLoop);

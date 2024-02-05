@@ -105,6 +105,15 @@ nextUnitOfWork 为 null 时，表示 fiber 树创建完毕，可以进行 commit
     - commit work
         - 深度优先，从叶子节点开始挂载，最后统一挂载到根节点，避免重绘的回流
 
+## 更新
+
+##### currentRoot 和 workInProgressRoot
+
+currentRoot 表示当前的 fiber 树，workInProgressRoot 表示正在构建的 fiber 树
+
+对比这两个树的差异，更新 dom
+
+
 
 
 

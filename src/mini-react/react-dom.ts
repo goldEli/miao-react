@@ -39,26 +39,6 @@ export function renderDom(element, workInProgress) {
   return dom;
 }
 
-// function patchComponent(element, fiber) {
-//   const {
-//     type,
-//     props: { children },
-//   } = element;
-//   let ele;
-//   if (isReactClassComponent(type)) {
-//     const { props, type: Comp } = element;
-//     const instance = new Comp(props);
-//     ele = instance.render();
-//   } else {
-//     const { props, type: fn } = element;
-//     ele = fn(props);
-//   }
-
-//   const dom = renderDom(ele, fiber);
-
-//   return dom;
-// }
-
 function patchHTMLElement(element) {
   const {
     type,
